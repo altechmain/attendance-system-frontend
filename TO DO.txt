@@ -19,4 +19,6 @@ pm2 startup
 TO DO
 1. upload to VPS and hosting
 2. in frontend index html is accepts rfid not intended to the current logged-in teacher
+3. error in forgot password
+4. Cannot GET /reset-password.html in admin page
 
