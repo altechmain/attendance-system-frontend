@@ -113,9 +113,15 @@
     let activeSubjectId = null;
     let activeSubjectText = '';
 
-    // Populate the subject combo box
+    // Populate the subject combo box for the logged-in teacher only
     async function loadSubjects() {
-      const res = await fetch('http://localhost:3000/api/subjects');
+      const role = localStorage.getItem('role');
+      const teacher_id = localStorage.getItem('teacher_id');
+      let url = 'http://localhost:3000/api/subjects';
+      if (role === 'teacher' && teacher_id) {
+        url += `?role=teacher&teacher_id=${teacher_id}`;
+      }
+      const res = await fetch(url);
       const subjects = await res.json();
       const select = document.getElementById('activeSubjectSelect');
       select.innerHTML = '<option value="">-- Select Subject --</option>';
@@ -144,6 +150,7 @@
       e.target.reset();
     };
 
+    // When submitting attendance, ensure only students of the active subject and logged-in teacher are matched
     document.getElementById('attendanceForm').onsubmit = async (e) => {
       e.preventDefault();
       if (!activeSubjectId) {
@@ -153,7 +160,26 @@
       const formData = new FormData(e.target);
       const data = Object.fromEntries(formData.entries());
       data.subject_id = activeSubjectId;
+      data.teacher_id = localStorage.getItem('teacher_id');
 
+      // Fetch students for the active subject and teacher
+      let students = [];
+      try {
+        const res = await fetch(`http://localhost:3000/api/students?subject_id=${activeSubjectId}&teacher_id=${data.teacher_id}`);
+        students = await res.json();
+      } catch {
+        showMessage('attendanceMessage', 'Unable to verify student list.', 'alert-danger');
+        return;
+      }
+
+      // Check if RFID matches a student in the filtered list
+      const matchedStudent = students.find(s => s.rfid_number === data.rfid_number);
+      if (!matchedStudent) {
+        showMessage('attendanceMessage', 'RFID does not match any student enrolled in this subject for this teacher.', 'alert-danger');
+        return;
+      }
+
+      // Proceed with attendance marking
       let result = { message: 'Unknown error', status: 'error' };
       try {
         const res = await fetch('http://localhost:3000/api/attendance/mark', {
@@ -175,7 +201,6 @@
 
       const msg = document.getElementById('status-message');
       if (result.status === 'success') {
-        // Highlight fullName and IN/OUT
         const actionWord = result.type === 'IN'
           ? '<span style="color:#198754;font-weight:bold;font-size:1.2em;">IN</span>'
           : '<span style="color:#dc3545;font-weight:bold;font-size:1.2em;">OUT</span>';
@@ -189,7 +214,6 @@
           msg.style.display = 'none';
         }, 3000);
       } else {
-        // Show error message (e.g., RFID not found)
         msg.textContent = result.message || 'RFID not found!';
         msg.className = 'alert alert-danger text-center';
         msg.style.display = 'block';
@@ -201,7 +225,7 @@
       e.target.reset();
     };
 
-    // Fetch and display attendance records
+    // Fetch and display attendance records for the active subject and enrolled students only
     async function fetchAttendanceRecords(subjectId) {
       const res = await fetch(`http://localhost:3000/api/attendance/records?subject_id=${subjectId}`);
       const data = await res.json();

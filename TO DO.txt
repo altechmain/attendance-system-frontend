@@ -1,6 +1,4 @@
-test all if working correcly
-upload to VPS and hosting
-
+======optional========
 To use PM2 instead of node for running your backend, follow these steps:
 1. Install PM2 globally (if not yet installed)
 npm install -g pm2
@@ -17,3 +15,8 @@ pm2 stop server.js
 6. Auto-start on server reboot
 pm2 save
 pm2 startup
+
+TO DO
+1. upload to VPS and hosting
+2. in frontend index html is accepts rfid not intended to the current logged-in teacher
+

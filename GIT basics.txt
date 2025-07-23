@@ -14,8 +14,6 @@ git reset --hard
 git add . && git commit -m "first commit" && git push
 
 
-
-
 ------------------------------------------------
 
 Step-by-Step Guide
